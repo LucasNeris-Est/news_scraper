@@ -84,19 +84,89 @@ class VectorDB:
             self.conn.commit()
             print(f"Tabela '{table_name}' criada com sucesso.")
     
-    def batch_insert(self, table_name: str, data: List[Tuple[str, str, List[float]]], batch_size: int = 500):
+    def get_existing_links(self, table_name: str) -> set:
         """
-        Insere dados em lote no banco.
+        Retorna um conjunto com todos os links já existentes na tabela.
+        
+        Args:
+            table_name: Nome da tabela
+        
+        Returns:
+            Conjunto de links (URLs) já existentes
+        """
+        if not self.conn:
+            raise RuntimeError("Conexão não estabelecida.")
+        
+        try:
+            with self.conn.cursor() as cursor:
+                # Verifica se a tabela existe
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = %s
+                    );
+                """, (table_name,))
+                
+                if not cursor.fetchone()[0]:
+                    return set()
+                
+                # Busca todos os links únicos no metadata
+                cursor.execute(sql.SQL("""
+                    SELECT DISTINCT metadata->>'link' 
+                    FROM {} 
+                    WHERE metadata->>'link' IS NOT NULL
+                """).format(sql.Identifier(table_name)))
+                
+                links = {row[0] for row in cursor.fetchall() if row[0]}
+                return links
+        except Exception as e:
+            print(f"  Erro ao buscar links existentes: {e}")
+            return set()
+    
+    def batch_insert(self, table_name: str, data: List[Tuple[str, str, List[float]]], 
+                     batch_size: int = 500, skip_duplicates: bool = True):
+        """
+        Insere dados em lote no banco, verificando duplicatas por link.
         
         Args:
             table_name: Nome da tabela
             data: Lista de tuplas (document, metadata_json, embedding)
             batch_size: Tamanho do lote para inserção
+            skip_duplicates: Se True, pula registros com links já existentes
         """
         if not self.conn:
             raise RuntimeError("Conexão não estabelecida.")
         
         if not data:
+            return
+        
+        # Filtra duplicatas se solicitado
+        if skip_duplicates:
+            existing_links = self.get_existing_links(table_name)
+            filtered_data = []
+            skipped = 0
+            
+            for item in data:
+                try:
+                    metadata = json.loads(item[1])
+                    link = metadata.get('link')
+                    
+                    if link and link in existing_links:
+                        skipped += 1
+                        continue
+                    
+                    filtered_data.append(item)
+                except (json.JSONDecodeError, KeyError):
+                    # Se não conseguir parsear o metadata, insere mesmo assim
+                    filtered_data.append(item)
+            
+            if skipped > 0:
+                print(f"  |-> {skipped} registros pulados (links já existentes).")
+            
+            data = filtered_data
+        
+        if not data:
+            print(f"  |-> Nenhum registro novo para inserir.")
             return
         
         insert_sql = sql.SQL("""
