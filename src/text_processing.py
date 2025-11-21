@@ -1,9 +1,8 @@
 """Funções para processamento e chunking de texto."""
 import re
 import unicodedata
-from typing import List, Dict
+from typing import List, Dict, Callable
 from bs4 import BeautifulSoup
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 def slugify_column_name(name: str) -> str:
@@ -47,9 +46,100 @@ def clean_text(text: str) -> str:
     return text.strip()
 
 
+class RecursiveCharacterTextSplitter:
+    """
+    Implementação simples do RecursiveCharacterTextSplitter.
+    Divide texto recursivamente usando separadores em ordem de prioridade.
+    """
+    
+    def __init__(self, separators: List[str], chunk_size: int = 600,
+                 chunk_overlap: int = 60, length_function: Callable = len):
+        """
+        Inicializa o splitter.
+        
+        Args:
+            separators: Lista de separadores em ordem de prioridade
+            chunk_size: Tamanho máximo do chunk
+            chunk_overlap: Sobreposição entre chunks
+            length_function: Função para calcular o tamanho do texto
+        """
+        self.separators = separators
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.length_function = length_function
+    
+    def split_text(self, text: str) -> List[str]:
+        """
+        Divide o texto em chunks.
+        
+        Args:
+            text: Texto a ser dividido
+        
+        Returns:
+            Lista de chunks
+        """
+        if not text:
+            return []
+        
+        # Remove espaços extras
+        text = text.strip()
+        
+        # Se o texto é menor que o chunk_size, retorna como único chunk
+        text_len = self.length_function(text)
+        if text_len <= self.chunk_size:
+            return [text]
+        
+        chunks = []
+        start = 0
+        
+        while start < text_len:
+            # Calcula o final ideal do chunk
+            end = min(start + self.chunk_size, text_len)
+            
+            # Se chegou ao final do texto
+            if end >= text_len:
+                remaining = text[start:].strip()
+                if remaining:
+                    chunks.append(remaining)
+                break
+            
+            # Pega o texto do chunk atual
+            chunk_text = text[start:end]
+            
+            # Procura pelo melhor separador para quebrar
+            split_pos = None
+            best_pos = -1
+            
+            for separator in self.separators:
+                # Procura o separador mais próximo do final do chunk
+                pos = chunk_text.rfind(separator)
+                if pos > best_pos and pos >= self.chunk_size * 0.3:  # Pelo menos 30% do chunk
+                    best_pos = pos
+                    split_pos = start + pos + len(separator)
+            
+            # Se não encontrou separador adequado, quebra no tamanho máximo
+            if split_pos is None or split_pos <= start:
+                split_pos = end
+            
+            # Extrai o chunk
+            chunk = text[start:split_pos].strip()
+            if chunk:
+                chunks.append(chunk)
+            
+            # Move o início considerando o overlap
+            # Garante que não fique preso em loop
+            new_start = max(start + 1, split_pos - self.chunk_overlap)
+            if new_start <= start:
+                new_start = split_pos
+            
+            start = new_start
+        
+        return chunks
+
+
 def chunk_recursive_langchain(raw_text: str, document_id: str, **kwargs) -> List[Dict]:
     """
-    Divide o texto usando o RecursiveCharacterTextSplitter da LangChain.
+    Divide o texto usando o RecursiveCharacterTextSplitter.
     
     Args:
         raw_text: Texto a ser dividido
@@ -73,8 +163,7 @@ def chunk_recursive_langchain(raw_text: str, document_id: str, **kwargs) -> List
         ],
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
-        length_function=len,
-        is_separator_regex=False
+        length_function=len
     )
     
     chunks_text = splitter.split_text(raw_text)

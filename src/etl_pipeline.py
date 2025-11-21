@@ -11,7 +11,7 @@ from .text_processing import process_noticia_to_chunks
 class ETLPipeline:
     """Pipeline para extrair, transformar e carregar notícias no banco vetorial."""
     
-    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+    def __init__(self, model_name: str = "BAAI/bge-m3",
                  device: Optional[str] = None):
         """
         Inicializa o pipeline ETL.
