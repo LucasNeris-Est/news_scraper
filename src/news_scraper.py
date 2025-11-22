@@ -22,14 +22,16 @@ class NewsScraper(ABC):
     
     def __enter__(self):
         """Context manager entry."""
-        playwright = sync_playwright().start()
-        self.browser = playwright.chromium.launch(headless=self.headless)
+        self.playwright = sync_playwright().start()
+        self.browser = self.playwright.chromium.launch(headless=self.headless)
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         if self.browser:
             self.browser.close()
+        if hasattr(self, 'playwright'):
+            self.playwright.stop()
     
     @abstractmethod
     def buscar_links(self, palavras_chave: str, limite: int = 5) -> List[str]:

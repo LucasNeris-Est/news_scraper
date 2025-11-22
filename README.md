@@ -10,6 +10,7 @@ src/
 ├── scrapers/
 │   ├── __init__.py
 │   └── g1_scraper.py    # Scraper específico para G1
+├── trends_extractor.py  # Extrator de tendências do Google Trends
 ├── text_processing.py   # Funções de chunking e limpeza de texto
 ├── vector_db.py         # Integração com PostgreSQL + PGVector
 ├── etl_pipeline.py      # Pipeline ETL completo
@@ -99,9 +100,25 @@ pipeline.process_noticias(noticias, table_name="noticias_g1")
 
 ### Via CLI
 
+**Usando Google Trends (padrão):**
 ```bash
-python -m src.main --palavras-chave "tecnologia" --limite 5 --tabela noticias_g1
+python run_scraper.py --limite 5 --tabela noticias_g1
 ```
+
+**Com palavras-chave específicas:**
+```bash
+python run_scraper.py --palavras-chave "tecnologia" --limite 5 --tabela noticias_g1
+```
+
+**Ajustar período do Google Trends:**
+```bash
+python run_scraper.py --horas-trends 24 --limite 5 --tabela noticias_g1
+```
+
+Por padrão, o scraper:
+- Extrai tendências políticas do Google Trends (últimas 168 horas = 7 dias)
+- Busca notícias para cada tendência encontrada
+- Processa e insere tudo no banco vetorial
 
 ## Adicionando Novos Scrapers
 
