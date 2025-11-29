@@ -14,7 +14,7 @@ class G1Scraper(NewsScraper):
     def buscar_links(self, palavras_chave: str, limite: int = 5) -> List[str]:
         """Busca links de notícias do G1."""
         palavras_codificadas = quote_plus(palavras_chave)
-        url = f"{self.BASE_URL}/busca/?q={palavras_codificadas}&from=now-1w"
+        url = f"{self.BASE_URL}/busca/?q={palavras_codificadas}&from=now-1d"
         
         if not self.browser:
             raise RuntimeError("Scraper deve ser usado como context manager")
@@ -47,7 +47,7 @@ class G1Scraper(NewsScraper):
         
         return links
     
-    def extrair_conteudo(self, url: str) -> Dict[str, str]:
+    def extrair_conteudo(self, url: str, palavras_chave: str) -> Dict[str, str]:
         """Extrai o conteúdo completo de uma notícia do G1."""
         if not self.browser:
             raise RuntimeError("Scraper deve ser usado como context manager")
@@ -63,7 +63,8 @@ class G1Scraper(NewsScraper):
             print(f"Erro ao carregar notícia {url}: {e}")
             return {
                 "titulo": "",
-                "subtitulo": None,
+                "subtitulo": "",
+                "palavras_chave": palavras_chave,
                 "autor": None,
                 "data": None,
                 "link": url,
@@ -75,6 +76,7 @@ class G1Scraper(NewsScraper):
             page.close()
         
         soup = BeautifulSoup(html, 'html.parser')
+        
         
         # Extrai título
         titulo_tag = soup.find('h1', class_='content-head__title')
@@ -115,6 +117,7 @@ class G1Scraper(NewsScraper):
             "subtitulo": subtitulo,
             "autor": autor,
             "data": data,
+            "palavras_chave": palavras_chave,
             "link": link_final,
             "conteudo": conteudo,
             "data_extracao": datetime.now().isoformat()

@@ -14,7 +14,7 @@ def main():
     parser.add_argument('--modelo', type=str, 
                        default='sentence-transformers/all-MiniLM-L6-v2',
                        help='Modelo de embeddings (padrão: all-MiniLM-L6-v2)')
-    parser.add_argument('--tabela', type=str, default='noticias',
+    parser.add_argument('--tabela', type=str, default='noticiasrag',
                        help='Nome da tabela no banco (padrão: noticias)')
     parser.add_argument('--salvar-json', type=str, default=None,
                        help='Salvar notícias em JSON (opcional)')

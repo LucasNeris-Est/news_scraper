@@ -82,7 +82,7 @@ class NewsScraper(ABC):
         noticias = []
         for i, link in enumerate(links, 1):
             print(f"Processando notícia {i}/{len(links)}: {link}")
-            noticia = self.extrair_conteudo(link)
+            noticia = self.extrair_conteudo(link, palavras_chave)
             noticias.append(noticia)
         
         return noticias
