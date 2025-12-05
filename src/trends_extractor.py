@@ -149,20 +149,40 @@ class GoogleTrendsExtractor:
                 continue
             
             # Exemplo: "renato freitas100 mil+ pesquisas·trending_upAtiva·anteontem"
-            # Queremos extrair apenas: "renato freitas"
+            # Exemplo: "valencia200+ pesquisas·trending_upAtiva·há 1 h"
+            # Queremos extrair apenas: "renato freitas" ou "valencia"
             
-            # Remove tudo a partir do primeiro número seguido de espaço ou "mil"
-            # Isso captura padrões como "100 mil+", "20 mil+", "200+", etc.
-            cleaned = re.sub(r'\d+\s*(mil\+|mil|milhões\+|milhões|pesquisas|pesquisa).*', '', trend, flags=re.IGNORECASE)
+            # Primeiro, tenta encontrar onde começa o número/metadados
+            # Procura por padrões como: número seguido de espaço, "+", "mil", "pesquisas", etc.
             
-            # Se ainda tiver símbolos · ou •, remove tudo após eles
+            # Estratégia: encontrar onde começa o primeiro número/metadados e cortar tudo dali pra frente
+            
+            # Primeiro, tenta encontrar o padrão mais comum: número seguido de "pesquisas"
+            # Isso captura: "500+ pesquisas", "100 mil+ pesquisas", "20 mil pesquisas", etc.
+            match = re.search(r'\d+\s*(mil\+|mil|milhões\+|milhões)?\s*\+?\s*pesquisas?', trend, re.IGNORECASE)
+            if match:
+                # Pega tudo antes do match
+                cleaned = trend[:match.start()].strip()
+            else:
+                # Se não encontrou "pesquisas", procura por número seguido de +
+                match = re.search(r'\d+\s*\+', trend)
+                if match:
+                    cleaned = trend[:match.start()].strip()
+                else:
+                    # Se não encontrou nada, usa a string original
+                    cleaned = trend
+            
+            # Remove tudo após símbolos · ou • (caso ainda existam)
             if '·' in cleaned:
-                cleaned = cleaned.split('·')[0]
+                cleaned = cleaned.split('·')[0].strip()
             if '•' in cleaned:
-                cleaned = cleaned.split('•')[0]
+                cleaned = cleaned.split('•')[0].strip()
             
-            # Remove palavras comuns de status que podem estar grudadas
-            cleaned = re.sub(r'(trending_up|trending_down|Ativa|Inativa|timelapse|Durou|há).*', '', cleaned, flags=re.IGNORECASE)
+            # Remove palavras comuns de status que podem estar grudadas no final
+            cleaned = re.sub(r'(trending_up|trending_down|Ativa|Inativa|timelapse|Durou|há|anteontem|ontem).*$', '', cleaned, flags=re.IGNORECASE)
+            
+            # Remove qualquer número restante no final (caso tenha ficado algum)
+            cleaned = re.sub(r'\s*\d+.*$', '', cleaned)
             
             # Remove espaços extras e limpa
             cleaned = cleaned.strip()
