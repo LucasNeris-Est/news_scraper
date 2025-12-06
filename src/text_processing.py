@@ -21,28 +21,111 @@ def slugify_column_name(name: str) -> str:
 
 
 def parse_and_clean_html_content(content_soup: BeautifulSoup) -> str:
-    """Extrai texto puro de um objeto BeautifulSoup, removendo tags indesejadas."""
+    """
+    Extrai texto puro de um objeto BeautifulSoup, removendo tags indesejadas.
+    Aplica higienização básica durante a extração.
+    """
     if not content_soup:
         return ""
     
-    for tag in content_soup(['script', 'style', 'a', 'img']):
+    # Remove tags indesejadas
+    for tag in content_soup(['script', 'style', 'a', 'img', 'iframe', 'embed', 'object']):
         tag.decompose()
     
-    for p in content_soup.find_all('p'):
-        p.replace_with(p.get_text() + '\n')
+    # Remove atributos que podem conter JavaScript
+    for tag in content_soup.find_all(True):
+        # Remove atributos de evento e outros problemáticos
+        attrs_to_remove = []
+        for attr in tag.attrs:
+            if attr.startswith('on') or attr in ['style', 'class', 'id']:
+                attrs_to_remove.append(attr)
+        for attr in attrs_to_remove:
+            del tag[attr]
     
+    # Extrai texto preservando estrutura de parágrafos
+    for p in content_soup.find_all('p'):
+        p.replace_with(p.get_text(separator=' ', strip=True) + '\n')
+    
+    # Extrai texto final
     cleaned_text = content_soup.get_text(separator=' ', strip=True)
-    return cleaned_text.replace('\n ', '\n').replace(' \n', '\n')
+    
+    # Normaliza quebras de linha
+    cleaned_text = cleaned_text.replace('\n ', '\n').replace(' \n', '\n')
+    
+    # Aplica sanitização
+    cleaned_text = sanitize_text(cleaned_text)
+    
+    return cleaned_text
 
 
-def clean_text(text: str) -> str:
-    """Aplica limpeza final em textos para remover ruídos comuns."""
+def sanitize_text(text: str) -> str:
+    """
+    Higieniza texto removendo caracteres especiais, emojis e caracteres de controle.
+    
+    Args:
+        text: Texto a ser higienizado
+    
+    Returns:
+        Texto limpo e normalizado
+    """
     if not text:
         return ""
     
+    # Normaliza Unicode (NFD -> NFC) para garantir caracteres consistentes
+    text = unicodedata.normalize('NFC', text)
+    
+    # Remove caracteres de controle (exceto quebras de linha e tabs)
+    text = ''.join(char for char in text if unicodedata.category(char)[0] != 'C' or char in '\n\t\r')
+    
+    # Remove emojis e símbolos especiais problemáticos
+    # Mantém apenas letras, números, pontuação comum e espaços
+    text = ''.join(
+        char for char in text 
+        if char.isprintable() or char in '\n\t'
+    )
+    
+    # Remove caracteres invisíveis (zero-width spaces, etc)
+    text = re.sub(r'[\u200b-\u200f\u202a-\u202e\u2060-\u2064]', '', text)
+    
+    # Normaliza espaços em branco
+    text = re.sub(r'[ \t]+', ' ', text)  # Múltiplos espaços/tabs -> um espaço
+    text = re.sub(r'\n{3,}', '\n\n', text)  # Múltiplas quebras -> duas
+    text = re.sub(r'[ \t]+\n', '\n', text)  # Espaços antes de quebra
+    text = re.sub(r'\n[ \t]+', '\n', text)  # Espaços depois de quebra
+    
+    # Remove linhas com apenas pontos ou caracteres repetidos
+    text = re.sub(r'^\s*[\.•·]{5,}\s*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'[\.•·]{5,}', '', text)
+    
+    # Remove caracteres especiais problemáticos para banco de dados
+    # Mantém letras (incluindo acentuadas), números, pontuação comum e espaços
+    # Remove apenas caracteres realmente problemáticos (emojis, símbolos especiais, etc)
+    text = re.sub(r'[^\w\s\.\,\;\:\!\?\-\(\)\[\]\"\'\/\n\t\u00c0-\u017f\u00a0-\u00ff]', ' ', text)
+    
+    # Remove espaços extras no início/fim de linhas
+    lines = text.split('\n')
+    lines = [line.strip() for line in lines]
+    text = '\n'.join(lines)
+    
+    return text.strip()
+
+
+def clean_text(text: str) -> str:
+    """
+    Aplica limpeza final em textos para remover ruídos comuns.
+    Usa sanitize_text para higienização completa.
+    """
+    if not text:
+        return ""
+    
+    # Aplica higienização completa
+    text = sanitize_text(text)
+    
+    # Limpeza adicional específica
     text = re.sub(r'^\s*[\.]{5,}\s*$', '', text, flags=re.MULTILINE)
     text = re.sub(r'\.{5,}', '', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
+    
     return text.strip()
 
 
@@ -170,11 +253,14 @@ def chunk_recursive_langchain(raw_text: str, document_id: str, **kwargs) -> List
     final_chunks = []
     
     for i, chunk in enumerate(chunks_text):
-        if len(chunk.strip()) > 50:
+        # Aplica sanitização no chunk antes de adicionar
+        chunk_limpo = sanitize_text(chunk.strip())
+        
+        if len(chunk_limpo) > 50:
             final_chunks.append({
                 "document_id": document_id,
                 "chunk_index": i,
-                "chunk_text": chunk.strip()
+                "chunk_text": chunk_limpo
             })
     
     return final_chunks

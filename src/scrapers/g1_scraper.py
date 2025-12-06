@@ -78,17 +78,23 @@ class G1Scraper(NewsScraper):
         soup = BeautifulSoup(html, 'html.parser')
         
         
+        # Importa função de sanitização
+        from ..text_processing import sanitize_text
+        
         # Extrai título
         titulo_tag = soup.find('h1', class_='content-head__title')
         titulo = _extrair_texto_seguro(titulo_tag, "Sem título")
+        titulo = sanitize_text(titulo) if titulo else "Sem título"
         
         # Extrai subtítulo
         subtitulo_tag = soup.find('h2', class_='content-head__subtitle')
         subtitulo = _extrair_texto_seguro(subtitulo_tag) or None
+        subtitulo = sanitize_text(subtitulo) if subtitulo else None
         
         # Extrai autor
         autor_tag = soup.find(class_='content-publication-data__from')
         autor = _extrair_texto_seguro(autor_tag) or None
+        autor = sanitize_text(autor) if autor else None
         
         # Extrai data
         data_tag = soup.find('time', itemprop='datePublished')
@@ -105,8 +111,13 @@ class G1Scraper(NewsScraper):
                 texto = _extrair_texto_seguro(p)
                 # Filtra parágrafos vazios e remove "LEIA TAMBÉM"
                 if texto and "LEIA TAMBÉM" not in texto:
-                    textos.append(texto)
+                    # Aplica sanitização em cada parágrafo
+                    texto_limpo = sanitize_text(texto)
+                    if texto_limpo:
+                        textos.append(texto_limpo)
             conteudo = "\n\n".join(textos)
+            # Aplica sanitização final no conteúdo completo
+            conteudo = sanitize_text(conteudo)
         
         # Extrai link canônico se disponível
         link_canonical = soup.find('link', attrs={'itemprop': 'mainEntityOfPage'})
