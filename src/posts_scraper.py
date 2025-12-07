@@ -201,7 +201,8 @@ class PostsScraper(ABC):
         curtidas: Optional[int] = None,
         data_post: Optional[str] = None,
         autor: Optional[str] = None,
-        arquivo: str = "post_capturado.json"
+        arquivo: str = "post_capturado.json",
+        comentarios: Optional[int] = None
     ) -> Dict:
         """
         Salva o texto capturado em formato JSON com metadados do post.
@@ -214,6 +215,7 @@ class PostsScraper(ABC):
             data_post: Data de publicação do post (ISO format)
             autor: Autor/username do post
             arquivo: Nome do arquivo JSON de saída
+            comentarios: Quantidade de comentários do post
         
         Returns:
             Dicionário com os dados salvos
@@ -223,18 +225,27 @@ class PostsScraper(ABC):
             "autor": autor,
             "legenda": legenda,
             "curtidas": curtidas,
+            "comentarios": comentarios,
             "data_post": data_post,
             "data_extracao": datetime.now().isoformat()
         }
         
         try:
-            with open(arquivo, 'w', encoding='utf-8') as f:
+            # Cria a pasta posts_extraidos se não existir
+            pasta_saida = "posts_extraidos"
+            os.makedirs(pasta_saida, exist_ok=True)
+            
+            # Adiciona a pasta ao caminho do arquivo
+            caminho_completo = os.path.join(pasta_saida, arquivo)
+            
+            with open(caminho_completo, 'w', encoding='utf-8') as f:
                 json.dump(dados_post, f, ensure_ascii=False, indent=2)
             
-            print(f"\n✓ Post salvo em: {os.path.abspath(arquivo)}")
+            print(f"\n✓ Post salvo em: {os.path.abspath(caminho_completo)}")
             print(f"📊 Informações:")
             print(f"   - Autor: {autor or 'Não informado'}")
             print(f"   - Curtidas: {curtidas or 'Não informado'}")
+            print(f"   - Comentários: {comentarios or 'Não informado'}")
             print(f"   - Data: {data_post or 'Não informado'}")
             
             return dados_post
