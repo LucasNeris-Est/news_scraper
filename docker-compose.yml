@@ -19,7 +19,13 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - news_agent_network
 
 volumes:
   postgres_data:
+
+networks:
+  news_agent_network:
+    external: true
 

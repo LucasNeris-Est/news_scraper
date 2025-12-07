@@ -9,13 +9,13 @@ def main():
     parser = argparse.ArgumentParser(description='Scraper de notícias com vetorização')
     parser.add_argument('--palavras-chave', type=str, required=True,
                        help='Palavras-chave para busca')
-    parser.add_argument('--limite', type=int, default=5,
-                       help='Número máximo de notícias (padrão: 5)')
+    parser.add_argument('--limite', type=int, default=3,
+                       help='Número máximo de notícias (padrão: 3)')
     parser.add_argument('--modelo', type=str, 
-                       default='sentence-transformers/all-MiniLM-L6-v2',
-                       help='Modelo de embeddings (padrão: all-MiniLM-L6-v2)')
+                       default='BAAI/bge-m3',
+                       help='Modelo de embeddings (padrão: BAAI/bge-m3)')
     parser.add_argument('--tabela', type=str, default='noticiasrag',
-                       help='Nome da tabela no banco (padrão: noticias)')
+                       help='Nome da tabela no banco (padrão: noticiasrag)')
     parser.add_argument('--salvar-json', type=str, default=None,
                        help='Salvar notícias em JSON (opcional)')
     
