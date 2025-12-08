@@ -12,6 +12,10 @@ class LinkedInScraper(PostsScraper):
     
     BASE_URL = "https://www.linkedin.com"
     
+    def __init__(self, headless: bool = True, **kwargs):
+        """Inicializa o LinkedInScraper com wait_until='networkidle'."""
+        super().__init__(headless=headless, wait_until="networkidle", **kwargs)
+    
     def extrair_dados_post(self, legenda: str) -> Dict[str, any]:
         """
         Extrai dados específicos de um post do LinkedIn a partir da legenda capturada.

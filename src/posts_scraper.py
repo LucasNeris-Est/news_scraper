@@ -17,7 +17,8 @@ class PostsScraper(ABC):
         viewport_width: int = 1920,
         viewport_height: int = 1080,
         timeout_navegacao: int = 30000,
-        tempo_carregamento: int = 3
+        tempo_carregamento: int = 3,
+        wait_until: str = "domcontentloaded"
     ):
         """
         Inicializa o scraper com configurações do navegador.
@@ -28,12 +29,14 @@ class PostsScraper(ABC):
             viewport_height: Altura da janela do navegador em pixels
             timeout_navegacao: Timeout máximo para navegação em milissegundos
             tempo_carregamento: Tempo de espera para carregamento completo da página em segundos
+            wait_until: Estratégia de espera do Playwright ("domcontentloaded", "load", "networkidle")
         """
         self.headless = headless
         self.viewport_width = viewport_width
         self.viewport_height = viewport_height
         self.timeout_navegacao = timeout_navegacao
         self.tempo_carregamento = tempo_carregamento
+        self.wait_until = wait_until
         self.browser: Optional[Browser] = None
         self.playwright = None
     
@@ -153,7 +156,7 @@ class PostsScraper(ABC):
         try:
             # Navega para a URL
             print(f"📡 Navegando para: {url}")
-            page.goto(url, wait_until="networkidle", timeout=self.timeout_navegacao)
+            page.goto(url, wait_until=self.wait_until, timeout=self.timeout_navegacao)
             
             # Tenta fechar popups
             self.close_popups(page, tempo_espera=1)
@@ -202,7 +205,9 @@ class PostsScraper(ABC):
         data_post: Optional[str] = None,
         autor: Optional[str] = None,
         arquivo: str = "post_capturado.json",
-        comentarios: Optional[int] = None
+        comentarios: Optional[int] = None,
+        retweets: Optional[int] = None,
+        visualizacoes: Optional[int] = None
     ) -> Dict:
         """
         Salva o texto capturado em formato JSON com metadados do post.
@@ -216,6 +221,8 @@ class PostsScraper(ABC):
             autor: Autor/username do post
             arquivo: Nome do arquivo JSON de saída
             comentarios: Quantidade de comentários do post
+            retweets: Quantidade de retweets do post (Twitter/X)
+            visualizacoes: Quantidade de visualizações do post (Twitter/X)
         
         Returns:
             Dicionário com os dados salvos
@@ -229,6 +236,14 @@ class PostsScraper(ABC):
             "data_post": data_post,
             "data_extracao": datetime.now().isoformat()
         }
+        
+        # Adiciona retweets apenas se fornecido (específico do Twitter)
+        if retweets is not None:
+            dados_post["retweets"] = retweets
+        
+        # Adiciona visualizações apenas se fornecido (específico do Twitter)
+        if visualizacoes is not None:
+            dados_post["visualizacoes"] = visualizacoes
         
         try:
             # Cria a pasta posts_extraidos se não existir
@@ -246,6 +261,10 @@ class PostsScraper(ABC):
             print(f"   - Autor: {autor or 'Não informado'}")
             print(f"   - Curtidas: {curtidas or 'Não informado'}")
             print(f"   - Comentários: {comentarios or 'Não informado'}")
+            if retweets is not None:
+                print(f"   - Retweets: {retweets or 'Não informado'}")
+            if visualizacoes is not None:
+                print(f"   - Visualizações: {visualizacoes or 'Não informado'}")
             print(f"   - Data: {data_post or 'Não informado'}")
             
             return dados_post

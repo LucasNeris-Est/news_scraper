@@ -11,6 +11,10 @@ class InstagramScraper(PostsScraper):
     
     BASE_URL = "https://www.instagram.com"
     
+    def __init__(self, headless: bool = True, **kwargs):
+        """Inicializa o InstagramScraper com wait_until='domcontentloaded'."""
+        super().__init__(headless=headless, wait_until="domcontentloaded", **kwargs)
+    
     def extrair_dados_post(self, legenda: str) -> Dict[str, any]:
         """
         Extrai dados específicos de um post do Instagram a partir da legenda capturada.
