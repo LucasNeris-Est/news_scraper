@@ -4,7 +4,7 @@ import json
 import sys
 import os
 from dotenv import load_dotenv
-from src.scrapers.google_avancado import GoogleAvancado
+from src.scrapers.google_scraper import GoogleScraper
 
 # Carrega variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -17,10 +17,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Exemplos de uso:
-  python run_google_avancado.py --palavra-chave "pec da blindagem" --rede instagram
-  python run_google_avancado.py --palavra-chave "lula" --rede todas --max-resultados 5
-  python run_google_avancado.py --palavra-chave "política" --data-inicio 2025-01-01 --ordenar-por-data
-  python run_google_avancado.py --palavra-chave "eleições" --dias-anteriores 7 --salvar resultados.json
+  python run_google_scraper.py --palavra-chave "pec da blindagem" --rede instagram
+  python run_google_scraper.py --palavra-chave "lula" --rede todas --max-resultados 5
+  python run_google_scraper.py --palavra-chave "política" --data-inicio 2025-01-01 --ordenar-por-data
+  python run_google_scraper.py --palavra-chave "eleições" --dias-anteriores 7 --salvar resultados.json
 
 Configuração:
   As credenciais são carregadas automaticamente do arquivo .env:
@@ -77,8 +77,8 @@ Configuração:
         sys.exit(1)
     
     try:
-        # Usa GoogleAvancado como context manager
-        with GoogleAvancado(api_key=api_key, cx=cx) as searcher:
+        # Usa GoogleScraper como context manager
+        with GoogleScraper(api_key=api_key, cx=cx) as searcher:
             if args.rede == 'todas':
                 # Busca em todas as redes
                 resultados = searcher.buscar_todas_redes(

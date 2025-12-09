@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 
 
-class GoogleAvancado:
+class GoogleScraper:
     """Classe para buscas avançadas usando Google Custom Search API.
     
     Attributes:
@@ -22,7 +22,7 @@ class GoogleAvancado:
     
     def __init__(self, api_key: str = None, cx: str = None):
         """
-        Inicializa o GoogleAvancado.
+        Inicializa o GoogleScraper.
         
         Args:
             api_key: Google API Key (ou usa variável de ambiente GOOGLE_API_KEY)
