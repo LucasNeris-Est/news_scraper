@@ -16,8 +16,8 @@ class GoogleAvancado:
     
     REDES_SOCIAIS = {
         "instagram": "instagram.com/p",
-        "twitter": "x.com",
-        "linkedin": "linkedin.com/posts",
+        "twitter": "x.com/*/status",
+        "linkedin": "linkedin.com/posts"
     }
     
     def __init__(self, api_key: str = None, cx: str = None):
@@ -56,9 +56,10 @@ class GoogleAvancado:
         data_fim: str = None,
         ordenar_por_data: bool = False,
         dias_anteriores: int = None
-    ) -> List[str]:
+    ) -> List[Dict]:
         """
         Busca URLs de uma rede social específica usando Google Custom Search API.
+        Retorna metadados completos (título, link, snippet, data, description).
         
         Args:
             palavra_chave: Palavra-chave para buscar (usa correspondência exata)
@@ -70,7 +71,7 @@ class GoogleAvancado:
             dias_anteriores: Restringe busca aos últimos N dias (ex: 7 para última semana)
         
         Returns:
-            Lista de URLs encontradas
+            Lista de dicionários com metadados completos
         """
         if rede_social.lower() not in self.REDES_SOCIAIS:
             print(f"❌ Rede social '{rede_social}' não suportada. Use: {', '.join(self.REDES_SOCIAIS.keys())}")
@@ -109,19 +110,47 @@ class GoogleAvancado:
             # Executa a busca
             resultado = self.service.cse().list(**params).execute()
             
-            # Extrai URLs dos resultados
-            urls = []
+            # Extrai URLs e metadados dos resultados
+            resultados_completos = []
             items = resultado.get('items', [])
             
-            for item in items:
+            print(f"\n📋 Encontrados {len(items)} resultado(s):\n")
+            
+            for i, item in enumerate(items, 1):
                 url = item.get('link')
                 if url:
-                    urls.append(url)
-                    print(f"  ✓ {url}")
+                    # Extrai todos os metadados
+                    metadados = {
+                        'url': url,
+                        'titulo': item.get('title'),
+                        'snippet': item.get('snippet'),
+                        'description': item.get('htmlSnippet'),
+                        'data': None
+                    }
+                    
+                    # Tenta extrair data de diferentes campos
+                    pagemap = item.get('pagemap', {})
+                    
+                    # Tenta obter data de metatags
+                    if 'metatags' in pagemap and pagemap['metatags']:
+                        metatag = pagemap['metatags'][0]
+                        metadados['data'] = (metatag.get('article:published_time') or 
+                                           metatag.get('datePublished') or 
+                                           metatag.get('date'))
+                    
+                    resultados_completos.append(metadados)
+                    
+                    # Exibe formatado
+                    print(f"[{i}] Título: {metadados['titulo']}")
+                    print(f"    Link: {metadados['url']}")
+                    print(f"    Snippet: {metadados['snippet'][:150] if metadados['snippet'] else 'N/A'}...")
+                    if metadados['data']:
+                        print(f"    Data: {metadados['data']}")
+                    print()
             
-            print(f"  ✓ {len(urls)} URL(s) encontrada(s)")
+            print(f"✓ {len(resultados_completos)} resultado(s) extraído(s)\n")
             
-            return urls
+            return resultados_completos
             
         except Exception as e:
             print(f"❌ Erro ao buscar: {e}")
@@ -220,7 +249,7 @@ class GoogleAvancado:
         max_resultados_por_rede: int = 10,
         data_inicio: str = None,
         ordenar_por_data: bool = False
-    ) -> Dict[str, List[str]]:
+    ) -> Dict[str, List[Dict]]:
         """
         Busca URLs em todas as redes sociais suportadas.
         
@@ -231,7 +260,7 @@ class GoogleAvancado:
             ordenar_por_data: Se True, ordena por data
         
         Returns:
-            Dicionário com rede_social: [lista de URLs]
+            Dicionário com rede_social: [lista de metadados]
         """
         print(f"\n{'='*70}")
         print(f"🔍 BUSCA AVANÇADA: '{palavra_chave}' EM TODAS AS REDES")

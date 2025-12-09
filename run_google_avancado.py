@@ -3,7 +3,11 @@ import argparse
 import json
 import sys
 import os
+from dotenv import load_dotenv
 from src.scrapers.google_avancado import GoogleAvancado
+
+# Carrega variáveis de ambiente do arquivo .env
+load_dotenv()
 
 
 def main():
@@ -16,16 +20,12 @@ Exemplos de uso:
   python run_google_avancado.py --palavra-chave "pec da blindagem" --rede instagram
   python run_google_avancado.py --palavra-chave "lula" --rede todas --max-resultados 5
   python run_google_avancado.py --palavra-chave "política" --data-inicio 2025-01-01 --ordenar-por-data
-  python run_google_avancado.py --palavra-chave "eleições" --dias-anteriores 7 --detalhes
+  python run_google_avancado.py --palavra-chave "eleições" --dias-anteriores 7 --salvar resultados.json
 
 Configuração:
-  Defina as variáveis de ambiente:
+  As credenciais são carregadas automaticamente do arquivo .env:
     GOOGLE_API_KEY - Sua chave da Google Custom Search API
     GOOGLE_CX - ID do seu Custom Search Engine
-  
-  Ou use argumentos:
-    --api-key "sua_chave"
-    --cx "seu_cx_id"
         '''
     )
     
@@ -45,14 +45,8 @@ Configuração:
                        help='Restringe busca aos últimos N dias (ex: 7 para última semana)')
     parser.add_argument('--ordenar-por-data', action='store_true',
                        help='Ordena resultados por data (mais recentes primeiro)')
-    parser.add_argument('--detalhes', action='store_true',
-                       help='Retorna metadados completos (título, snippet, data)')
     parser.add_argument('--salvar', type=str, metavar='ARQUIVO',
                        help='Salvar resultados em arquivo JSON')
-    parser.add_argument('--api-key', type=str,
-                       help='Google API Key (ou use GOOGLE_API_KEY env var)')
-    parser.add_argument('--cx', type=str,
-                       help='Custom Search Engine ID (ou use GOOGLE_CX env var)')
     
     args = parser.parse_args()
     
@@ -68,16 +62,15 @@ Configuração:
             print("\n⚠️ Operação cancelada pelo usuário")
             sys.exit(0)
     
-    # Verifica credenciais
-    api_key = args.api_key or os.getenv('GOOGLE_API_KEY')
-    cx = args.cx or os.getenv('GOOGLE_CX')
+    # Verifica credenciais do arquivo .env
+    api_key = os.getenv('GOOGLE_API_KEY')
+    cx = os.getenv('GOOGLE_CX')
     
     if not api_key or not cx:
-        print("\n❌ ERRO: Credenciais não configuradas!")
-        print("\nConfigure as variáveis de ambiente:")
-        print("  set GOOGLE_API_KEY=sua_chave")
-        print("  set GOOGLE_CX=seu_cx_id")
-        print("\nOu use os argumentos --api-key e --cx")
+        print("\n❌ ERRO: Credenciais não encontradas no arquivo .env!")
+        print("\nCertifique-se de que o arquivo .env contém:")
+        print("  GOOGLE_API_KEY=sua_chave")
+        print("  GOOGLE_CX=seu_cx_id")
         print("\nObtenha suas credenciais em:")
         print("  API Key: https://console.cloud.google.com/apis/credentials")
         print("  CX ID: https://programmablesearchengine.google.com/")
@@ -88,10 +81,6 @@ Configuração:
         with GoogleAvancado(api_key=api_key, cx=cx) as searcher:
             if args.rede == 'todas':
                 # Busca em todas as redes
-                if args.detalhes:
-                    print("\n⚠️ Modo detalhes não disponível para 'todas' as redes")
-                    print("Use --rede [twitter|instagram|linkedin] para detalhes\n")
-                
                 resultados = searcher.buscar_todas_redes(
                     palavra_chave,
                     args.max_resultados,
@@ -100,33 +89,16 @@ Configuração:
                 )
             else:
                 # Busca em rede específica
-                if args.detalhes:
-                    # Busca com detalhes
-                    resultados_detalhados = searcher.buscar_com_detalhes(
-                        palavra_chave,
-                        args.rede,
-                        args.max_resultados,
-                        data_inicio=args.data_inicio,
-                        ordenar_por_data=args.ordenar_por_data,
-                        dias_anteriores=args.dias_anteriores
-                    )
-                    resultados = {args.rede: resultados_detalhados}
-                else:
-                    # Busca simples (apenas URLs)
-                    urls = searcher.buscar_urls(
-                        palavra_chave,
-                        args.rede,
-                        args.max_resultados,
-                        data_inicio=args.data_inicio,
-                        data_fim=args.data_fim,
-                        ordenar_por_data=args.ordenar_por_data,
-                        dias_anteriores=args.dias_anteriores
-                    )
-                    resultados = {args.rede: urls}
-            
-            # Exibe resultados formatados (se não for modo detalhes)
-            if not args.detalhes:
-                _exibir_resultados(resultados)
+                urls = searcher.buscar_urls(
+                    palavra_chave,
+                    args.rede,
+                    args.max_resultados,
+                    data_inicio=args.data_inicio,
+                    data_fim=args.data_fim,
+                    ordenar_por_data=args.ordenar_por_data,
+                    dias_anteriores=args.dias_anteriores
+                )
+                resultados = {args.rede: urls}
             
             # Salva em arquivo se solicitado
             if args.salvar:
@@ -152,14 +124,15 @@ def _exibir_resultados(resultados: dict):
     for rede, dados in resultados.items():
         print(f"\n{rede.upper()}:")
         
-        # Verifica se são URLs simples ou dados detalhados
-        if dados and isinstance(dados[0], dict):
-            # Dados detalhados (já foram exibidos)
-            total_urls += len(dados)
-        elif dados:
-            # URLs simples
-            for i, url in enumerate(dados, 1):
-                print(f"  {i}. {url}")
+        if dados:
+            # Verifica se são URLs simples ou dados detalhados
+            if isinstance(dados[0], str):
+                # URLs simples
+                for i, url in enumerate(dados, 1):
+                    print(f"  {i}. {url}")
+            else:
+                # Dados detalhados (não exibe novamente, já foram mostrados)
+                pass
             total_urls += len(dados)
         else:
             print("  Nenhuma URL encontrada")
@@ -188,4 +161,16 @@ def _salvar_resultados(resultados: dict, arquivo: str):
 
 
 if __name__ == "__main__":
+    # Para testar com parâmetros hardcoded, descomente e ajuste:
+    import sys
+    sys.argv = [
+        'run_google_avancado.py',
+        '--palavra-chave', 'lula',
+        '--rede', 'todas',
+        '--max-resultados', '2',
+        '--ordenar-por-data',
+        '--dias-anteriores', '7',
+        '--salvar', 'resultados.json'
+    ]
+    
     main()
