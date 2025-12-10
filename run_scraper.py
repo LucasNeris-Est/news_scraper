@@ -38,7 +38,7 @@ def main():
         # Extrai tendências do Google Trends
         print("Extraindo tendências políticas do Google Trends...")
         with GoogleTrendsExtractor(headless=True) as trends:
-            palavras_chave_list = trends.extrair_tendencias_politicas(hours=args.horas_trends)
+            palavras_chave_list = trends.extrair_tendencias_politicas(hours=args.horas_trends)[:5]
         
         # Fecha o context manager antes de continuar
         # (o with já fecha automaticamente, mas garantimos que está fechado)

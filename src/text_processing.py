@@ -302,6 +302,7 @@ def process_noticia_to_chunks(noticia: Dict[str, str]) -> List[Dict]:
             "autor": noticia.get('autor'),
             "data": noticia.get('data'),
             "link": noticia.get('link'),
+            "source": noticia.get('source'),
             "data_extracao": noticia.get('data_extracao')
         }
     
