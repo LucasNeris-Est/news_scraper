@@ -69,7 +69,7 @@ class G1Scraper(NewsScraper):
                 "data": None,
                 "link": url,
                 "conteudo": "",
-                "source": "G1",
+                "source": url,
                 "erro": str(e),
                 "data_extracao": datetime.now().isoformat()
             }
@@ -132,7 +132,7 @@ class G1Scraper(NewsScraper):
             "palavras_chave": palavras_chave,
             "link": link_final,
             "conteudo": conteudo,
-            "source": "G1",
+            "source": link_final,
             "data_extracao": datetime.now().isoformat()
         }
 
