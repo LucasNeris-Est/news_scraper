@@ -33,4 +33,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Para testar com parâmetros hardcoded, descomente e ajuste:
+    import sys
+    sys.argv = [
+        'run_twitter_scraper.py',
+        '--url', 'https://x.com/sbtrio/status/1998467687366959419',
+        '--arquivo', 'post_twitter_09-12-2025_22-11.json',  
+        '--headless',
+    ]
+    
+    main()    

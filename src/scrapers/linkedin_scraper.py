@@ -48,17 +48,25 @@ class LinkedInScraper(PostsScraper):
                         legenda_limpa = legenda_limpa.split(marcador)[0].strip()
                         break
             
-            # Extrai autor da primeira linha da legenda
+            # Extrai autor da primeira linha da legenda ou da URL
             autor = None
             if legenda_limpa:
                 linhas = legenda_limpa.split('\n')
-                for linha in linhas[:3]:  # Verifica as 3 primeiras linhas
+                for linha in linhas[:10]:  # Verifica as primeiras linhas
                     linha_limpa = linha.strip()
-                    # Verifica se parece com um username (sem espaços, não muito longo)
-                    if linha_limpa and ' ' not in linha_limpa and len(linha_limpa) < 50 and not linha_limpa.startswith('#'):
-                        # Remove "Verified" se existir
-                        autor = linha_limpa.replace('Verified', '').strip()
+                    # Procura por padrão "Publicação de Nome Sobrenome" ou "Nome Sobrenome" no início
+                    if linha_limpa.startswith("Publicação de "):
+                        autor = linha_limpa.replace("Publicação de ", "").strip()
                         break
+                    # Verifica se parece com um nome (tem espaço, não muito longo, não é menu)
+                    if (linha_limpa and ' ' in linha_limpa and len(linha_limpa) < 50 and 
+                        not linha_limpa.startswith('#') and 
+                        linha_limpa not in ['Pular para conteúdo principal', 'LinkedIn', 'Artigos', 'Pessoas', 'Learning', 'Vagas', 'Jogos']):
+                        # Pode ser o nome do autor
+                        autor = linha_limpa.replace('Verified', '').strip()
+                        # Se encontrou algo que parece um nome, para
+                        if autor and len(autor.split()) >= 2:  # Pelo menos 2 palavras (nome e sobrenome)
+                            break
             
             # Extrai curtidas/likes da legenda
             curtidas = None
@@ -121,11 +129,11 @@ class LinkedInScraper(PostsScraper):
                         break
             
             dados = {
-                "autor": autor,
-                "legenda": legenda_limpa,
-                "curtidas": curtidas,
-                "comentarios": comentarios,
-                "data_post": data_post
+                "author": autor,
+                "text": legenda_limpa,
+                "likes": curtidas,
+                "comments": comentarios,
+                "date_post": data_post
             }
             
             print(f"✓ Dados extraídos:")
@@ -164,6 +172,18 @@ class LinkedInScraper(PostsScraper):
         print(f"💼 PROCESSANDO POST DO LINKEDIN")
         print(f"{'='*60}\n")
         
+        # Extrai autor da URL (formato: /posts/nome-sobrenome-id_...)
+        autor_url = None
+        match_url = re.search(r'/posts/([^_/]+)', url)
+        if match_url:
+            # Converte hífens em espaços e capitaliza cada palavra
+            autor_slug = match_url.group(1)
+            # Remove números no final do slug (ex: gustavo-pires-3baa60163 -> gustavo-pires)
+            autor_slug = re.sub(r'-[\da-f]+$', '', autor_slug)
+            # Converte para nome legível
+            autor_url = ' '.join(word.capitalize() for word in autor_slug.split('-'))
+            print(f"📝 Autor extraído da URL: {autor_url}")
+        
         # Adiciona timestamp ao nome do arquivo
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         nome_base, extensao = arquivo_saida.rsplit('.', 1) if '.' in arquivo_saida else (arquivo_saida, 'json')
@@ -175,16 +195,20 @@ class LinkedInScraper(PostsScraper):
         # 2. Extrai dados específicos do LinkedIn a partir do texto capturado
         dados_especificos = self.extrair_dados_post(texto_completo)
         
-        # 3. Salva tudo em JSON (inclui comentarios nos dados adicionais)
+        # 3. Usa o autor da URL se não foi encontrado no texto
+        autor_final = autor_url
+        
+        # 4. Salva tudo em JSON (inclui comentarios nos dados adicionais)
         resultado = self.salvar_json(
             texto_capturado=texto_completo,
             url=url,
-            legenda=dados_especificos.get("legenda", ""),
-            curtidas=dados_especificos.get("curtidas"),
-            data_post=dados_especificos.get("data_post"),
-            autor=dados_especificos.get("autor"),
+            legenda=dados_especificos.get("text", ""),
+            curtidas=dados_especificos.get("likes"),
+            data_post=dados_especificos.get("date_post"),
+            autor=autor_final,
             arquivo=arquivo_com_timestamp,
-            comentarios=dados_especificos.get("comentarios")
+            comentarios=dados_especificos.get("comments"),
+            social_network="linkedin"
         )
         
         print(f"\n{'='*60}")

@@ -193,20 +193,24 @@ class GoogleTrendsExtractor:
         
         return tendencias_limpas
     
-    def extrair_tendencias_politicas(self, hours: int = 168) -> List[str]:
+    def extrair_tendencias_politicas(self, hours: int = 168, max_trends: int = 5) -> List[str]:
         """
         Extrai tendências políticas do Google Trends (categoria 14).
         
         Args:
             hours: Últimas N horas (padrão: 168 = 7 dias)
+            max_trends: Número máximo de tendências a extrair (padrão: 5)
         
         Returns:
-            Lista de palavras-chave políticas
+            Lista de palavras-chave políticas (limitada a max_trends)
         """
-        return self.extrair_tendencias(
+        tendencias = self.extrair_tendencias(
             geo="BR",
             hl="pt-BR",
             hours=hours,
             category=14  # Categoria: Política
         )
+        
+        # Limita a quantidade de tendências retornadas
+        return tendencias[:max_trends] if tendencias else []
 

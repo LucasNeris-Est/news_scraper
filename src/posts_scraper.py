@@ -207,7 +207,11 @@ class PostsScraper(ABC):
         arquivo: str = "post_capturado.json",
         comentarios: Optional[int] = None,
         retweets: Optional[int] = None,
-        visualizacoes: Optional[int] = None
+        views: Optional[int] = None,
+        top_trend: Optional[str] = None,
+        image_urls: Optional[List[str]] = None,
+        image_description: Optional[List[str]] = None,
+        social_network: Optional[str] = None
     ) -> Dict:
         """
         Salva o texto capturado em formato JSON com metadados do post.
@@ -215,35 +219,44 @@ class PostsScraper(ABC):
         Args:
             texto_capturado: Texto completo capturado da página
             url: URL original do post
-            legenda: Legenda/descrição do post
-            curtidas: Quantidade de curtidas do post
-            data_post: Data de publicação do post (ISO format)
-            autor: Autor/username do post
-            arquivo: Nome do arquivo JSON de saída
-            comentarios: Quantidade de comentários do post
+            text: Legenda/descrição do post
+            likes: Quantidade de curtidas do post
+            date_post: Data de publicação do post (ISO format)
+            author: Autor/username do post
+            comments: Quantidade de comentários do post
             retweets: Quantidade de retweets do post (Twitter/X)
-            visualizacoes: Quantidade de visualizações do post (Twitter/X)
+            views: Quantidade de visualizações do post (Twitter/X)
+            top_trend: Palavra-chave/tendência associada ao post
+            image_urls: Lista de URLs de imagens do post
+            image_description: Lista de descrições das imagens do post
+            social_network: Nome da rede social (instagram, twitter, linkedin, etc)
         
         Returns:
             Dicionário com os dados salvos
         """
         dados_post = {
-            "url": url,
-            "autor": autor,
-            "legenda": legenda,
-            "curtidas": curtidas,
-            "comentarios": comentarios,
-            "data_post": data_post,
-            "data_extracao": datetime.now().isoformat()
+            "text": legenda,
+            "top_trend": top_trend,
+            "image_description": image_description or [],
+            "social_network": social_network,
+            "metadata": {
+                "url": url,
+                "image_urls": image_urls or [],
+                "author": autor,
+                "likes": curtidas,
+                "comments": comentarios,
+                "date_post": data_post,
+                "date_extraction": datetime.now().isoformat()
+            }
         }
         
         # Adiciona retweets apenas se fornecido (específico do Twitter)
         if retweets is not None:
-            dados_post["retweets"] = retweets
+            dados_post["metadata"]["retweets"] = retweets
         
         # Adiciona visualizações apenas se fornecido (específico do Twitter)
-        if visualizacoes is not None:
-            dados_post["visualizacoes"] = visualizacoes
+        if views is not None:
+            dados_post["metadata"]["views"] = views
         
         try:
             # Cria a pasta posts_extraidos se não existir
@@ -263,8 +276,8 @@ class PostsScraper(ABC):
             print(f"   - Comentários: {comentarios or 'Não informado'}")
             if retweets is not None:
                 print(f"   - Retweets: {retweets or 'Não informado'}")
-            if visualizacoes is not None:
-                print(f"   - Visualizações: {visualizacoes or 'Não informado'}")
+            if views is not None:
+                print(f"   - Visualizações: {views or 'Não informado'}")
             print(f"   - Data: {data_post or 'Não informado'}")
             
             return dados_post

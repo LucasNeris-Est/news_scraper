@@ -124,7 +124,6 @@ class GoogleScraper:
                         'url': url,
                         'titulo': item.get('title'),
                         'snippet': item.get('snippet'),
-                        'description': item.get('htmlSnippet'),
                         'data': None
                     }
                     

@@ -43,4 +43,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Para testar com parâmetros hardcoded, descomente e ajuste:
+    import sys
+    sys.argv = [
+        'run_linkedin_scraper.py',
+        '--url', 'https://pt.linkedin.com/posts/veja-com_ge-aerospace-decola-em-banco-de-provas-de-activity-7404138106347724800-1kCD',
+        '--arquivo', 'post_linkedin_09-12-2025_22-11.json',  
+        '--headless',
+    ]
+    #https://pt.linkedin.com/posts/neuber-hyppolito_fqm-conven%C3%A7%C3%A3o-activity-6892992648224079872-3zd3
+    #https://pt.linkedin.com/posts/gustavo-pires-3baa60163_o-politeia-%C3%A9-um-projeto-de-ensino-pesquisa-activity-7344554706058280960-etk2
+    #https://pt.linkedin.com/posts/veja-com_ge-aerospace-decola-em-banco-de-provas-de-activity-7404138106347724800-1kCD
+    main()    

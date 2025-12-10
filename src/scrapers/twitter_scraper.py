@@ -120,13 +120,13 @@ class TwitterScraper(PostsScraper):
             
             
             dados = {
-                "autor": autor,
-                "legenda": legenda_limpa,
-                "curtidas": curtidas,
-                "comentarios": comentarios,
+                "author": autor,
+                "text": legenda_limpa,
+                "likes": curtidas,
+                "comments": comentarios,
                 "retweets": retweets,
-                "visualizacoes": visualizacoes,
-                "data_post": data_post
+                "views": visualizacoes,
+                "date_post": data_post
             }
             
             print(f"✓ Dados extraídos:")
@@ -184,14 +184,15 @@ class TwitterScraper(PostsScraper):
         resultado = self.salvar_json(
             texto_capturado=texto_completo,
             url=url,
-            legenda=dados_especificos.get("legenda", ""),
-            curtidas=dados_especificos.get("curtidas"),
-            data_post=dados_especificos.get("data_post"),
-            autor=dados_especificos.get("autor"),
+            legenda=dados_especificos.get("text", ""),
+            curtidas=dados_especificos.get("likes"),
+            data_post=dados_especificos.get("date_post"),
+            autor=dados_especificos.get("author"),
             arquivo=arquivo_com_timestamp,
-            comentarios=dados_especificos.get("comentarios"),
+            comentarios=dados_especificos.get("comments"),
             retweets=dados_especificos.get("retweets"),
-            visualizacoes=dados_especificos.get("visualizacoes")
+            views=dados_especificos.get("views"),
+            social_network="twitter"
         )
         
         print(f"\n{'='*60}")

@@ -31,6 +31,14 @@ def main():
         import traceback
         traceback.print_exc()
 
-
 if __name__ == "__main__":
-    main()
+    # Para testar com parâmetros hardcoded, descomente e ajuste:
+    import sys
+    sys.argv = [
+        'run_instagram_scraper.py',
+        '--url', 'https://www.instagram.com/p/DSBhdTeE07d/',
+        '--arquivo', 'post_instagram_09-12-2025_22-11.json',  
+        '--headless',
+    ]
+    
+    main()    
