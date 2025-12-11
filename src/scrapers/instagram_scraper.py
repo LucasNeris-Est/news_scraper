@@ -30,9 +30,16 @@ class InstagramScraper(PostsScraper):
         try:
             import re
             
-            # Corta a legenda até encontrar o trecho de login/footer
+            # Limpa a legenda removendo trechos de login/signup e footer
             legenda_limpa = legenda
             if legenda_limpa:
+                # Remove todo o trecho inicial de login/signup até o tempo (ex: 14h, 12h)
+                # Padrão: Remove tudo até encontrar "{tempo}\n" seguido de conteúdo
+                match_inicio = re.search(r'\d+[hdwmy]\n(.+)', legenda_limpa, re.DOTALL)
+                if match_inicio:
+                    legenda_limpa = match_inicio.group(1).strip()
+                
+                # Remove marcadores de fim
                 marcadores_fim = [
                     "Log into like or comment.",
                     "Log in to like or comment.",
@@ -44,18 +51,43 @@ class InstagramScraper(PostsScraper):
                     if marcador in legenda_limpa:
                         legenda_limpa = legenda_limpa.split(marcador)[0].strip()
                         break
+                
+                # Remove emojis e caracteres especiais, mas mantém pontuação básica
+                if legenda_limpa:
+                    # Remove emojis (caracteres Unicode não-ASCII acima de \u1F600)
+                    legenda_limpa = re.sub(r'[^\x00-\x7F\u00C0-\u024F\u1E00-\u1EFF]+', '', legenda_limpa)
+                    
+                    # Substitui múltiplas quebras de linha por espaço
+                    legenda_limpa = re.sub(r'\n+', ' ', legenda_limpa)
+                    
+                    # Remove espaços múltiplos
+                    legenda_limpa = re.sub(r'\s+', ' ', legenda_limpa)
+                    
+                    # Remove caracteres especiais mantendo apenas letras, números e pontuação básica
+                    legenda_limpa = re.sub(r'[^\w\s.,!?;:()\-\'"áàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ]', '', legenda_limpa)
+                    
+                    legenda_limpa = legenda_limpa.strip()
             
-            # Extrai autor (username) da primeira linha da legenda
+            # Extrai autor (username) da legenda
             autor = None
-            if legenda_limpa:
-                linhas = legenda_limpa.split('\n')
-                for linha in linhas[:3]:  # Verifica as 3 primeiras linhas
-                    linha_limpa = linha.strip()
-                    # Verifica se parece com um username (sem espaços, não muito longo)
-                    if linha_limpa and ' ' not in linha_limpa and len(linha_limpa) < 50 and not linha_limpa.startswith('#'):
-                        # Remove "Verified" se existir
-                        autor = linha_limpa.replace('Verified', '').strip()
-                        break
+            if legenda:
+                # Padrão 1: "Never miss a post from {autor}"
+                match_never_miss = re.search(r'Never miss a post from ([^\n]+)', legenda)
+                if match_never_miss:
+                    autor = match_never_miss.group(1).strip()
+                
+                # Padrão 2: Procura por "{autor}\n•\nFollow" após "Log in"
+                if not autor:
+                    match_follow = re.search(r'Log in\n([^\n]+)\n•\nFollow', legenda)
+                    if match_follow:
+                        # Pega o último username antes de "•\nFollow"
+                        linhas_antes_follow = match_follow.group(1).strip().split('\n')
+                        if linhas_antes_follow:
+                            autor = linhas_antes_follow[-1].strip()
+                
+                # Remove caracteres indesejados
+                if autor:
+                    autor = autor.replace('Verified', '').strip()
             
             # Extrai curtidas da legenda
             curtidas = None
@@ -81,26 +113,66 @@ class InstagramScraper(PostsScraper):
             
             # Extrai data de publicação (formato relativo ou ISO)
             data_post = None
-            if legenda_limpa:
-                # Procura por padrões de data
-                data_patterns = [
-                    r'(\d+[hdwmy])',  # 2d, 1w, 3h, 4m, 1y
-                    r'(\d+\s*(?:hour|day|week|month|year)s?\s*ago)',
-                    r'(\d+\s*(?:hora|dia|semana|mês|ano)s?\s*atrás)',
-                    r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})',  # ISO format
-                ]
+            if legenda:
+                # Procura após o autor e "Follow" por padrões de tempo
+                # Padrão: "{autor}\n \n{tempo}"
+                match_tempo = re.search(r'Follow\n[^\n]*\n(\d+[hdwmy])', legenda)
+                if match_tempo:
+                    data_post = match_tempo.group(1)
+                else:
+                    # Procura por padrões de data gerais
+                    data_patterns = [
+                        r'(\d+[hdwmy])',  # 2d, 1w, 3h, 4m, 1y
+                        r'(\d+\s*(?:hour|day|week|month|year)s?\s*ago)',
+                        r'(\d+\s*(?:hora|dia|semana|mês|ano)s?\s*atrás)',
+                        r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})',  # ISO format
+                    ]
+                    
+                    for pattern in data_patterns:
+                        match = re.search(pattern, legenda)
+                        if match:
+                            data_post = match.group(1)
+                            break
+            
+            # Extrai comentários
+            comentarios = []
+            if legenda:
+                # Padrão: {username}\n \n{tempo}\n{texto_comentario}\nLike\nReply
+                comentarios_matches = re.finditer(
+                    r'([a-zA-Z0-9._]+)\n\s+\n(\d+[hdwmy])\n(.+?)\nLike\nReply',
+                    legenda,
+                    re.DOTALL
+                )
                 
-                for pattern in data_patterns:
-                    match = re.search(pattern, legenda_limpa)
-                    if match:
-                        data_post = match.group(1)
-                        break
+                primeiro_comentario = True
+                for match in comentarios_matches:
+                    username = match.group(1).strip()
+                    tempo = match.group(2).strip()
+                    texto = match.group(3).strip()
+                    
+                    # Ignora o primeiro comentário se for do autor do post (é a legenda)
+                    if primeiro_comentario and autor and username == autor:
+                        primeiro_comentario = False
+                        continue
+                    primeiro_comentario = False
+                    
+                    # Remove emojis e limpa o texto do comentário
+                    texto_limpo = re.sub(r'[^\x00-\x7F\u00C0-\u024F\u1E00-\u1EFF]+', '', texto)
+                    texto_limpo = re.sub(r'\n+', ' ', texto_limpo)
+                    texto_limpo = re.sub(r'\s+', ' ', texto_limpo).strip()
+                    
+                    comentarios.append({
+                        "author": username,
+                        "time": tempo,
+                        "text": texto_limpo
+                    })
             
             dados = {
                 "author": autor,
                 "text": legenda_limpa,
                 "likes": curtidas,
-                "date_post": data_post
+                "date_post": data_post,
+                "comments": comentarios if comentarios else None
             }
             
             print(f"✓ Dados extraídos:")
@@ -156,6 +228,7 @@ class InstagramScraper(PostsScraper):
             curtidas=dados_especificos.get("likes"),
             data_post=dados_especificos.get("date_post"),
             autor=dados_especificos.get("author"),
+            comentarios=dados_especificos.get("comments"),
             arquivo=arquivo_com_timestamp,
             social_network="instagram"
         )

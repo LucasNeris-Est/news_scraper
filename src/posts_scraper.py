@@ -205,7 +205,7 @@ class PostsScraper(ABC):
         data_post: Optional[str] = None,
         autor: Optional[str] = None,
         arquivo: str = "post_capturado.json",
-        comentarios: Optional[int] = None,
+        comentarios: Optional[List[Dict]] = None,
         retweets: Optional[int] = None,
         views: Optional[int] = None,
         top_trend: Optional[str] = None,
@@ -223,7 +223,7 @@ class PostsScraper(ABC):
             likes: Quantidade de curtidas do post
             date_post: Data de publicação do post (ISO format)
             author: Autor/username do post
-            comments: Quantidade de comentários do post
+            comments: Lista de comentários do post (cada comentário é um dict com author, time, text)
             retweets: Quantidade de retweets do post (Twitter/X)
             views: Quantidade de visualizações do post (Twitter/X)
             top_trend: Palavra-chave/tendência associada ao post

@@ -36,9 +36,15 @@ if __name__ == "__main__":
     import sys
     sys.argv = [
         'run_instagram_scraper.py',
-        '--url', 'https://www.instagram.com/p/DSBhdTeE07d/',
+        '--url', 'https://www.instagram.com/p/DSFQiuUgJDO/',
         '--arquivo', 'post_instagram_09-12-2025_22-11.json',  
         '--headless',
     ]
-    
     main()    
+    
+# Exemplos de URLs de posts do Instagram para teste:
+#https://www.instagram.com/p/DSG89SFjAXq/
+#https://www.instagram.com/p/DSGxI5TjR8q/
+#https://www.instagram.com/p/DSBhdTeE07d/
+#https://www.instagram.com/p/DSHn3VvkcnP/
+#https://www.instagram.com/p/DSFQiuUgJDO/
