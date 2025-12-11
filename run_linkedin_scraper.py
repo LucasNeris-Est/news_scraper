@@ -47,11 +47,16 @@ if __name__ == "__main__":
     import sys
     sys.argv = [
         'run_linkedin_scraper.py',
-        '--url', 'https://pt.linkedin.com/posts/veja-com_ge-aerospace-decola-em-banco-de-provas-de-activity-7404138106347724800-1kCD',
+        '--url', 'https://pt.linkedin.com/posts/poder360_o-deputado-nikolas-ferreira-pl-mg-publicou-activity-7404344139573854208-zvl5',
         '--arquivo', 'post_linkedin_09-12-2025_22-11.json',  
         '--headless',
     ]
-    #https://pt.linkedin.com/posts/neuber-hyppolito_fqm-conven%C3%A7%C3%A3o-activity-6892992648224079872-3zd3
-    #https://pt.linkedin.com/posts/gustavo-pires-3baa60163_o-politeia-%C3%A9-um-projeto-de-ensino-pesquisa-activity-7344554706058280960-etk2
-    #https://pt.linkedin.com/posts/veja-com_ge-aerospace-decola-em-banco-de-provas-de-activity-7404138106347724800-1kCD
+# Exemplos de URLs de posts do LinkedIn para teste:
+#https://pt.linkedin.com/posts/neuber-hyppolito_fqm-conven%C3%A7%C3%A3o-activity-6892992648224079872-3zd3
+#https://pt.linkedin.com/posts/gustavo-pires-3baa60163_o-politeia-%C3%A9-um-projeto-de-ensino-pesquisa-activity-7344554706058280960-etk2
+#https://pt.linkedin.com/posts/veja-com_ge-aerospace-decola-em-banco-de-provas-de-activity-7404138106347724800-1kCD
+#https://pt.linkedin.com/posts/poder360_por-291-a-148-a-câmara-dos-deputados-activity-7404465157395173376-jhrR
+#https://pt.linkedin.com/posts/estadao_o-perigo-dos-precedentes-acordão-no-congresso-activity-7404459465971953666-2cZw
+#https://pt.linkedin.com/posts/veja-com_veja-pensamentododia-activity-7404459914552819712-BQZ5
+#https://pt.linkedin.com/posts/poder360_o-deputado-nikolas-ferreira-pl-mg-publicou-activity-7404344139573854208-zvl5
     main()    

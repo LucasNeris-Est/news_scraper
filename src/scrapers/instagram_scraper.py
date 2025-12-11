@@ -39,6 +39,12 @@ class InstagramScraper(PostsScraper):
                 if match_inicio:
                     legenda_limpa = match_inicio.group(1).strip()
                 
+                # Remove comentários: corta antes do primeiro padrão de comentário "{username} \n {tempo}\n"
+                # Procura por padrão de comentário (username seguido de tempo em nova linha)
+                match_comentario = re.search(r'\n([a-zA-Z0-9._]+)\s+\n(\d+[hdwmy])\n', legenda_limpa)
+                if match_comentario:
+                    legenda_limpa = legenda_limpa[:match_comentario.start()].strip()
+                
                 # Remove marcadores de fim
                 marcadores_fim = [
                     "Log into like or comment.",
@@ -61,6 +67,21 @@ class InstagramScraper(PostsScraper):
                     legenda_limpa = re.sub(r'\n+', ' ', legenda_limpa)
                     
                     # Remove espaços múltiplos
+                    legenda_limpa = re.sub(r'\s+', ' ', legenda_limpa)
+                    
+                    # Remove mensagens de interface
+                    legenda_limpa = re.sub(r'No comments yet\.?\s*Start the conversation\.?', '', legenda_limpa, flags=re.IGNORECASE)
+                    
+                    # Remove termos específicos do Instagram
+                    termos_remover = [
+                        r'\bLike\b', r'\bReply\b', r'\bView\b', r'\bView all\b',
+                        r'\blikes\b', r'\bhours?\b', r'\bago\b', r'\bminutes?\b',
+                        r'\bdays?\b', r'\bweeks?\b', r'\bmonths?\b', r'\byears?\b'
+                    ]
+                    for termo in termos_remover:
+                        legenda_limpa = re.sub(termo, '', legenda_limpa, flags=re.IGNORECASE)
+                    
+                    # Remove espaços múltiplos novamente após remoção dos termos
                     legenda_limpa = re.sub(r'\s+', ' ', legenda_limpa)
                     
                     # Remove caracteres especiais mantendo apenas letras, números e pontuação básica

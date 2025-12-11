@@ -32,6 +32,9 @@ class TwitterScraper(PostsScraper):
             # Corta a legenda até encontrar trechos de interface do Twitter
             legenda_limpa = legenda
             if legenda_limpa:
+                # Remove mensagens de erro de mídia
+                legenda_limpa = re.sub(r'The media could not be played\.?\s*\\?n?\s*Reload', '', legenda_limpa, flags=re.IGNORECASE)
+                
                 marcadores_fim = [
                     "Read ",
                     "New to X?",

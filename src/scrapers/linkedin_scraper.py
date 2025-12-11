@@ -29,10 +29,32 @@ class LinkedInScraper(PostsScraper):
         print(f"🔍 Extraindo dados específicos do LinkedIn da legenda...")
         
         try:
-            # Corta a legenda até encontrar trechos de interface do LinkedIn
+            # Remove trechos de cabeçalho e rodapé da interface do LinkedIn
             legenda_limpa = legenda
+            
             if legenda_limpa:
+                # Remove cabeçalho padrão do LinkedIn
+                cabecalhos_remover = [
+                    "Pular para conteúdo principal LinkedIn Artigos Pessoas Learning Vagas Jogos Entrar Cadastre-se agora",
+                    "Pular para conteúdo principal LinkedIn Artigos Pessoas Learning Vagas Jogos Entrar Inscreva-se agora",
+                ]
+                for cabecalho in cabecalhos_remover:
+                    if cabecalho in legenda_limpa:
+                        legenda_limpa = legenda_limpa.replace(cabecalho, "").strip()
+                
+                # Remove cabeçalho: tudo antes do timestamp (ex: "1 d", "1 sem")
+                # Padrão: Remove tudo até encontrar "\n\n{tempo}\n\n" ou "\n{tempo}\n"
+                match_inicio = re.search(r'\n+(\d+\s*(?:[hdwmy]|sem|dia|hora))\n+', legenda_limpa)
+                if match_inicio:
+                    # Pega tudo após o timestamp
+                    inicio_conteudo = match_inicio.end()
+                    legenda_limpa = legenda_limpa[inicio_conteudo:].strip()
+                
+                # Marcadores de fim de conteúdo
                 marcadores_fim = [
+                    "Ver perfil  Seguir",
+                    "Conferir tópicos",
+                    "Ver todos",
                     "Sign in to view more content",
                     "Join now",
                     "Sign in",
@@ -47,6 +69,37 @@ class LinkedInScraper(PostsScraper):
                     if marcador in legenda_limpa:
                         legenda_limpa = legenda_limpa.split(marcador)[0].strip()
                         break
+            
+            # Remove comentários (tudo após "Gostei\nComentar\nCompartilhe")
+            if legenda_limpa and "Gostei\nComentar\nCompartilhe" in legenda_limpa:
+                legenda_limpa = legenda_limpa.split("Gostei\nComentar\nCompartilhe")[0].strip()
+            
+            # Limpa a legenda: remove emojis, caracteres especiais e \n
+            if legenda_limpa:
+                # Remove emojis (caracteres Unicode não-ASCII acima de \u1F600)
+                legenda_limpa = re.sub(r'[^\x00-\x7F\u00C0-\u024F\u1E00-\u1EFF]+', '', legenda_limpa)
+                
+                # Substitui múltiplas quebras de linha por espaço
+                legenda_limpa = re.sub(r'\n+', ' ', legenda_limpa)
+                
+                # Remove espaços múltiplos
+                legenda_limpa = re.sub(r'\s+', ' ', legenda_limpa)
+                
+                # Remove termos do LinkedIn que podem ter sobrado
+                termos_linkedin = [
+                    r'\bmais\b\s+\d+',  # "mais 215"
+                    r'\d+\s+comentários',  # "23 comentários"
+                ]
+                for termo in termos_linkedin:
+                    legenda_limpa = re.sub(termo, '', legenda_limpa, flags=re.IGNORECASE)
+                
+                # Remove espaços múltiplos novamente
+                legenda_limpa = re.sub(r'\s+', ' ', legenda_limpa)
+                
+                # Remove caracteres especiais mantendo apenas letras, números e pontuação básica
+                legenda_limpa = re.sub(r'[^\w\s.,!?;:()\-\'"áàâãéèêíïóôõöúçñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑ]', '', legenda_limpa)
+                
+                legenda_limpa = legenda_limpa.strip()
             
             # Extrai autor da primeira linha da legenda ou da URL
             autor = None
